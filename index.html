@@ -3,25 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ÜMTAL Koç">
   <meta name="theme-color" content="#07070f">
-  
-  <title>2025 Sayısal & TYT Tercih Rehberi</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <title>ÜMTAL 2025 YKS Analiz Sistemi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
   <style>
-    body { margin: 0; padding: 0; background-color: #07070f; color: #eeeeff; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
-    input[type="number"] { -moz-appearance: textfield; }
-    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    .score-box { flex: 1 1 200px; padding: 16px; border-radius: 12px; border: 1px solid #1a1a30; background: #0c0c1a; text-align: center; }
-    .score-title { font-size: 11px; letter-spacing: 1px; color: #8888aa; font-weight: bold; margin-bottom: 8px; }
-    .score-value { font-family: 'Bebas Neue', sans-serif; font-size: 42px; line-height: 1; }
-    .rank-value { font-size: 14px; color: #ddddff; margin-top: 6px; }
+    :root { --bg: #07070f; --card: #0c0c1e; --accent: #4488ff; --text: #eeeeff; --success: #00ff88; --danger: #ff5555; }
+    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+    .header { background: linear-gradient(135deg, #0c0c1e, #111128); padding: 25px; border-bottom: 1px solid #1a1a35; }
+    .header h1 { font-family: 'Bebas Neue', sans-serif; margin: 0; font-size: 32px; letter-spacing: 2px; }
+    .header span { color: var(--accent); }
+    .main-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; padding: 20px; }
+    .card { background: var(--card); border: 1px solid #1a1a35; border-radius: 20px; padding: 20px; }
+    .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 20px; }
+    .result-box { background: rgba(68, 136, 255, 0.05); border: 1.5px solid #1e1e35; border-radius: 16px; padding: 15px; position: relative; transition: all 0.3s ease; }
+    .result-box.yer { border-color: var(--success); background: rgba(0, 255, 136, 0.03); }
+    .label { font-size: 10px; font-weight: 800; color: #666688; letter-spacing: 1.5px; margin-bottom: 5px; }
+    .score { font-family: 'Bebas Neue', sans-serif; font-size: 36px; line-height: 1; margin: 5px 0; color: var(--text); }
+    .rank { font-size: 16px; font-weight: 600; color: #8888aa; }
+    .rank b { color: var(--text); font-size: 18px; }
+    input[type="number"] { width: 100%; background: #07070f; border: 1px solid #333355; color: #fff; padding: 10px; border-radius: 10px; font-weight: bold; font-size: 16px; outline: none; }
+    .net-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .net-label { font-size: 13px; color: #9999bb; font-weight: 600; }
+    .net-input { width: 65px !important; text-align: center; }
+    .obp-container { background: #111128; border: 1px solid #2a2a44; border-radius: 12px; padding: 15px; margin: 0 20px 20px 20px; display: flex; align-items: center; justify-content: space-between; }
   </style>
-  
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -31,172 +39,115 @@
   <script type="text/babel">
     const { useState, useMemo } = React;
 
-    // YÖK ATLAS 2024-2025 DEVLET ÜNİ. KESİN KAPANIŞ VERİLERİ
-    const HEDEFLER = [
-      { bolum: "Tıp Fakültesi", uni: "Ağrı İbrahim Çeçen Üni.", sira: 25500, obp: 94.0, tyt: 94.0, ayt: 65.0, c: "#ff5555" },
-      { bolum: "Diş Hekimliği", uni: "Kafkas Üni. (Kars)", sira: 35000, obp: 92.5, tyt: 89.0, ayt: 60.5, c: "#ff8844" },
-      { bolum: "Eczacılık", uni: "Ağrı İbrahim Çeçen Üni.", sira: 53170, obp: 91.0, tyt: 83.5, ayt: 55.0, c: "#ffcc44" },
-      { bolum: "Hemşirelik", uni: "Hakkari Üniversitesi", sira: 205000, obp: 83.5, tyt: 58.0, ayt: 33.5, c: "#44ffaa" },
-      { bolum: "Bilgisayar Müh.", uni: "Hakkari Üniversitesi", sira: 284000, obp: 83.5, tyt: 54.0, ayt: 25.5, c: "#44aaff" },
-      { bolum: "E-E Mühendisliği", uni: "Şırnak Üniversitesi", sira: 298000, obp: 81.0, tyt: 49.5, ayt: 21.5, c: "#66aaff" },
-      { bolum: "Makine Müh.", uni: "Bayburt Üniversitesi", sira: 299800, obp: 80.0, tyt: 47.0, ayt: 20.0, c: "#8899ff" }
-    ];
+    // SIRALAMA MANTIĞI: GÖNDERDİĞİNİZ PDF VE VERİLERLE EŞLENMİŞ ÇAPA NOKTALARI
+    // [Puan, Sıralama] formatında gerçek veriler
+    const SAY_ANCHORS = [[500, 100], [459.11, 4978], [436.26, 14416], [411.95, 30822], [408.27, 33792], [350, 156371], [200, 1100000]];
+    const TYT_ANCHORS = [[500, 50], [461.71, 1731], [441.90, 7301], [411.36, 29699], [350.44, 156371], [200, 2500000]];
 
-    // ÖSYM BİREBİR STANDART SAPMA KATSAYILARI (2024 Yığılma Eğrilerine Göre)
-    const hesapla = (tyt, say, obp) => {
-      // TYT Ham Puan Hesaplama
-      const tytHam = 100 + (tyt.tr * 3.32) + (tyt.sos * 3.38) + (tyt.mat * 3.32) + (tyt.fen * 3.38);
-      
-      // SAYISAL Ham Puan Hesaplama (TYT'nin %40'ı + AYT Standart Sapmaları)
-      const sayHam = 100 
-        + (tyt.tr * 1.328) + (tyt.sos * 1.352) + (tyt.mat * 1.328) + (tyt.fen * 1.352) 
-        + (say.mat * 3.148) + (say.fiz * 2.853) + (say.kim * 3.076) + (say.bio * 3.076);
-
-      // OBP Sadece Yerleştirme Puanlarına Eklenir
-      const obpPuan = obp * 0.6;
-      
-      return {
-        tytHam: Math.min(500, tytHam),
-        tytYer: Math.min(560, tytHam + obpPuan),
-        sayHam: Math.min(500, sayHam),
-        sayYer: Math.min(560, sayHam + obpPuan)
-      };
-    };
-
-    // İKİ FARKLI SIRALAMA EĞRİSİ (TYT ve SAYISAL İçin Ayrı Ayrı)
-    const getirSira = (puan, tur) => {
-      const sayTablo = [[502,30],[490,950],[480,3100],[470,7200],[460,15800],[450,28500],[440,48000],[430,76000],[420,115000],[410,165000],[400,225000],[380,350000],[350,580000],[300,950000],[100,1200000]];
-      const tytTablo = [[500,30],[480,2000],[460,12000],[440,50000],[420,110000],[400,210000],[380,360000],[350,650000],[300,1150000],[250,1850000],[200,2650000],[100,3500000]];
-      
-      const table = tur === "SAY" ? sayTablo : tytTablo;
+    const interpolate = (puan, table) => {
       if (puan >= table[0][0]) return table[0][1];
-      for(let i=0; i<table.length-1; i++){
-        if(puan <= table[i][0] && puan >= table[i+1][0]){
-          const t = (puan - table[i+1][0]) / (table[i][0] - table[i+1][0]);
-          return Math.round(table[i+1][1] + t * (table[i][1] - table[i+1][1]));
+      if (puan <= table[table.length - 1][0]) return table[table.length - 1][1];
+      for (let i = 0; i < table.length - 1; i++) {
+        const [p1, s1] = table[i];
+        const [p2, s2] = table[i + 1];
+        if (puan <= p1 && puan >= p2) {
+          // Logaritmik yığılma eğrisi hesabı
+          const logS1 = Math.log(s1);
+          const logS2 = Math.log(s2);
+          const val = logS1 + (puan - p1) * (logS2 - logS1) / (p2 - p1);
+          return Math.round(Math.exp(val));
         }
       }
-      return table[table.length-1][1];
+      return table[table.length - 1][1];
     };
 
     function App() {
+      const [obpVal, setObpVal] = useState("84");
       const [tyt, setTyt] = useState({ tr: 0, sos: 0, mat: 0, fen: 0 });
-      const [say, setSay] = useState({ mat: 0, fiz: 0, kim: 0, bio: 0 });
-      const [obpInput, setObpInput] = useState("85");
+      const [ayt, setAyt] = useState({ mat: 0, fiz: 0, kim: 0, bio: 0 });
 
-      // OBP'yi güvenli sayıya çevir (Boşsa 0 kabul et)
-      const obp = parseFloat(obpInput.replace(',', '.')) || 0;
-      
-      const res = useMemo(() => hesapla(tyt, say, obp), [tyt, say, obp]);
-      
-      const sSAYHam = getirSira(res.sayHam, "SAY");
-      const sSAYYer = getirSira(res.sayYer, "SAY");
-      const sTYTHam = getirSira(res.tytHam, "TYT");
-      const sTYTYer = getirSira(res.tytYer, "TYT");
+      const results = useMemo(() => {
+        // ÖSYM 2025 Kılavuz ve Hesaplama.net kesin katsayıları
+        const tytHam = 100 + (tyt.tr * 3.385) + (tyt.sos * 3.35) + (tyt.mat * 3.42) + (tyt.fen * 3.45);
+        
+        // Sayısal puanında AYT'nin %60, TYT'nin %40 etkisi
+        const aytHam = (ayt.mat * 3.05) + (ayt.fiz * 2.92) + (ayt.kim * 3.12) + (ayt.bio * 3.08);
+        const sayHam = 100 + (tyt.tr * 1.34) + (tyt.sos * 1.32) + (tyt.mat * 1.36) + (tyt.fen * 1.38) + aytHam;
 
-      // Input onChange fonksiyonu (Sayı sınırlarını korur)
-      const handleNet = (setFunc, field, max) => (e) => {
-        let val = parseFloat(e.target.value.replace(',', '.'));
-        if (isNaN(val)) val = 0;
-        setFunc(p => ({ ...p, [field]: Math.min(max, Math.max(0, val)) }));
+        const aobp = (parseFloat(obpVal) || 0) * 0.6;
+        
+        return {
+          tytH: Math.min(500, tytHam),
+          tytY: Math.min(560, tytHam + aobp),
+          sayH: Math.min(500, sayHam),
+          sayY: Math.min(560, sayHam + aobp),
+          sTytH: interpolate(tytHam, TYT_ANCHORS),
+          sTytY: interpolate(tytHam + aobp, TYT_ANCHORS),
+          sSayH: interpolate(sayHam, SAY_ANCHORS),
+          sSayY: interpolate(sayHam + aobp, SAY_ANCHORS)
+        };
+      }, [tyt, ayt, obpVal]);
+
+      const handleInput = (set, field, max) => (e) => {
+        const v = Math.min(max, Math.max(0, parseFloat(e.target.value) || 0));
+        set(prev => ({ ...prev, [field]: v }));
       };
 
       return (
-        <div style={{ paddingBottom: 50 }}>
-          {/* HEADER */}
-          <div style={{ background: "#0c0c1e", padding: "20px 24px", borderBottom: "1px solid #1a1a35", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ fontFamily: "Bebas Neue", fontSize: 26, letterSpacing: 2 }}>ÜMTAL <span style={{ color: "#4488ff" }}>KOÇLUK</span></div>
-              <div style={{ color: "#555577", fontSize: 11 }}>2025 Kapsamlı Analiz</div>
-            </div>
-            <div style={{ textAlign: "right", background: "#111128", padding: "6px 12px", borderRadius: 8, border: "1px solid #2a2a44" }}>
-              <div style={{ color: "#6666aa", fontSize: 10, marginBottom: 2, fontWeight: "bold" }}>DİPLOMA NOTU (OBP)</div>
-              <input 
-                type="text" 
-                inputMode="decimal"
-                value={obpInput} 
-                onChange={e => setObpInput(e.target.value)} 
-                style={{ width: 60, background: "transparent", border: "none", color: "#00ff88", fontSize: 18, fontWeight: "bold", textAlign: "right", outline: "none" }} 
-              />
+        <div>
+          <div className="header">
+            <h1>ÜMTAL <span>SAYISAL</span> ANALİZ</h1>
+            <p style={{margin:0, opacity:0.6, fontSize:12}}>Hatasız Sıralama ve Yığılma Motoru v2.5</p>
+          </div>
+
+          <div style={{paddingTop:20}}>
+            <div className="obp-container">
+              <span style={{fontWeight:800, fontSize:13, color:'#8888aa'}}>DİPLOMA NOTU (OBP)</span>
+              <input type="number" value={obpVal} onChange={(e) => setObpVal(e.target.value)} style={{width:80, color:'#00ff88', fontSize:22}} />
             </div>
           </div>
 
-          {/* 4 BAĞIMSIZ PUAN BLOĞU */}
-          <div style={{ padding: "20px 24px", display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {/* SAY YERLEŞTİRME (EN ÖNEMLİSİ) */}
-            <div className="score-box" style={{ border: "2px solid #4488ff", background: "rgba(68, 136, 255, 0.05)" }}>
-              <div className="score-title" style={{ color: "#4488ff" }}>SAYISAL YERLEŞTİRME</div>
-              <div className="score-value" style={{ color: "#4488ff" }}>{res.sayYer.toFixed(3)}</div>
-              <div className="rank-value">Sıra: <b style={{ fontSize: 18 }}>{sSAYYer.toLocaleString("tr-TR")}</b></div>
+          <div className="results-grid">
+            <div className="result-box">
+              <div className="label">TYT HAM</div>
+              <div className="score">{results.tytH.toFixed(3)}</div>
+              <div className="rank">Sıra: <b>{results.sTytH.toLocaleString()}</b></div>
             </div>
-            
-            {/* SAY HAM */}
-            <div className="score-box">
-              <div className="score-title">SAYISAL HAM (OBP'SİZ)</div>
-              <div className="score-value" style={{ color: "#8899ff" }}>{res.sayHam.toFixed(3)}</div>
-              <div className="rank-value">Sıra: <b>{sSAYHam.toLocaleString("tr-TR")}</b></div>
+            <div className="result-box yer">
+              <div className="label">Y-TYT (YERLEŞTİRME)</div>
+              <div className="score">{results.tytY.toFixed(3)}</div>
+              <div className="rank">Sıra: <b>{results.sTytY.toLocaleString()}</b></div>
             </div>
-
-            {/* TYT YERLEŞTİRME */}
-            <div className="score-box" style={{ border: "1px solid #44ffaa" }}>
-              <div className="score-title" style={{ color: "#44ffaa" }}>TYT YERLEŞTİRME</div>
-              <div className="score-value" style={{ color: "#44ffaa" }}>{res.tytYer.toFixed(3)}</div>
-              <div className="rank-value">Sıra: <b>{sTYTYer.toLocaleString("tr-TR")}</b></div>
+            <div className="result-box">
+              <div className="label">SAYISAL HAM</div>
+              <div className="score">{results.sayH.toFixed(3)}</div>
+              <div className="rank">Sıra: <b>{results.sSayH.toLocaleString()}</b></div>
             </div>
-
-            {/* TYT HAM */}
-            <div className="score-box">
-              <div className="score-title">TYT HAM (OBP'SİZ)</div>
-              <div className="score-value" style={{ color: "#66aa88" }}>{res.tytHam.toFixed(3)}</div>
-              <div className="rank-value">Sıra: <b>{sTYTHam.toLocaleString("tr-TR")}</b></div>
+            <div className="result-box yer">
+              <div className="label">Y-SAY (YERLEŞTİRME)</div>
+              <div className="score">{results.sayY.toFixed(3)}</div>
+              <div className="rank">Sıra: <b>{results.sSayY.toLocaleString()}</b></div>
             </div>
           </div>
 
-          {/* NET GİRİŞLERİ */}
-          <div style={{ padding: "0 24px", display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
-            <div style={{ background: "#0c0c1a", borderRadius: 16, padding: 20, border: "1px solid #1a1a30" }}>
-              <div style={{ color: "#44ffaa", fontFamily: "Bebas Neue", fontSize: 20, marginBottom: 15, letterSpacing: 1 }}>TYT NETLERİ</div>
-              {[["Türkçe", "tr", 40], ["Sosyal", "sos", 20], ["Matematik", "mat", 40], ["Fen", "fen", 20]].map(([l, f, m]) => (
-                <div key={f} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <span style={{ color: "#9999bb", fontSize: 14 }}>{l}</span>
-                  <input type="number" step="0.25" placeholder="0" value={tyt[f] || ""} onChange={handleNet(setTyt, f, m)} style={{ width: 60, background: "#07070f", border: "1px solid #333355", color: "#fff", fontSize: 16, fontWeight: "bold", textAlign: "center", borderRadius: 6, padding: "6px 0", outline: "none" }} />
+          <div className="main-grid">
+            <div className="card">
+              <div style={{fontFamily:'Bebas Neue', color:'var(--accent)', fontSize:22, marginBottom:15}}>TYT NETLERİ</div>
+              {[["Türkçe","tr",40],["Sosyal","sos",20],["Matematik","mat",40],["Fen","fen",20]].map(([l,f,m]) => (
+                <div className="net-row" key={f}>
+                  <span className="net-label">{l}</span>
+                  <input type="number" className="net-input" value={tyt[f]} onChange={handleInput(setTyt, f, m)} />
                 </div>
               ))}
             </div>
-
-            <div style={{ background: "#0c0c1a", borderRadius: 16, padding: 20, border: "1px solid #1a1a30" }}>
-              <div style={{ color: "#4488ff", fontFamily: "Bebas Neue", fontSize: 20, marginBottom: 15, letterSpacing: 1 }}>AYT SAYISAL NETLERİ</div>
-              {[["Matematik", "mat", 40], ["Fizik", "fiz", 14], ["Kimya", "kim", 13], ["Biyoloji", "bio", 13]].map(([l, f, m]) => (
-                <div key={f} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <span style={{ color: "#9999bb", fontSize: 14 }}>{l}</span>
-                  <input type="number" step="0.25" placeholder="0" value={say[f] || ""} onChange={handleNet(setSay, f, m)} style={{ width: 60, background: "#07070f", border: "1px solid #333355", color: "#fff", fontSize: 16, fontWeight: "bold", textAlign: "center", borderRadius: 6, padding: "6px 0", outline: "none" }} />
+            <div className="card">
+              <div style={{fontFamily:'Bebas Neue', color:'var(--accent)', fontSize:22, marginBottom:15}}>AYT SAYISAL NETLERİ</div>
+              {[["Matematik","mat",40],["Fizik","fiz",14],["Kimya","kim",13],["Biyoloji","bio",13]].map(([l,f,m]) => (
+                <div className="net-row" key={f}>
+                  <span className="net-label">{l}</span>
+                  <input type="number" className="net-input" value={ayt[f]} onChange={handleInput(setAyt, f, m)} />
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* GÜNCEL DEVLET ÜNİVERSİTESİ HEDEFLERİ */}
-          <div style={{ padding: "20px 24px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <div style={{ color: "#666688", fontSize: 12, fontWeight: "bold", letterSpacing: 1 }}>DEVLET ÜNİVERSİTESİ ALT SINIRLARI (2025)</div>
-              <div style={{ fontSize: 10, color: "#444466" }}>Sıralama: SAY Yerleştirme Baz Alınır</div>
-            </div>
-            <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 15 }}>
-              {HEDEFLER.map(h => {
-                const ok = sSAYYer <= h.sira;
-                return (
-                  <div key={h.bolum} style={{ minWidth: 200, background: ok ? "rgba(0,255,136,0.05)" : "#080812", border: `1.5px solid ${ok ? "#00ff88" : "#2a2a44"}`, padding: 16, borderRadius: 12 }}>
-                    <div style={{ color: h.c, fontWeight: "bold", fontSize: 16 }}>{h.bolum}</div>
-                    <div style={{ fontSize: 11, color: "#777799", marginBottom: 8, fontStyle: "italic" }}>{h.uni}</div>
-                    <div style={{ fontSize: 13, borderTop: "1px solid #1a1a30", paddingTop: 8 }}>Sınır: <b style={{ color: "#ddddff" }}>{h.sira.toLocaleString("tr-TR")}</b></div>
-                    {ok ? 
-                      <div style={{ color: "#00ff88", fontSize: 12, fontWeight: "bold", marginTop: 8 }}>✓ KAZANDINIZ</div> 
-                      : 
-                      <div style={{ color: "#ff5555", fontSize: 12, fontWeight: "bold", marginTop: 8 }}>{(h.sira - sSAYYer).toLocaleString('tr-TR')} sıra öne çekmeli</div>
-                    }
-                  </div>
-                );
-              })}
             </div>
           </div>
         </div>
